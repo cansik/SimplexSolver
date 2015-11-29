@@ -18,7 +18,6 @@ public class SimplexCoefficient {
         this.isNotNegative = isNotNegative;
     }
 
-
     public double getValue() {
         return value;
     }

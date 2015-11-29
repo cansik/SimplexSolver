@@ -1,6 +1,7 @@
 package ch.nexpose.simplex;
 
 import ch.nexpose.simplex.types.ConstraintType;
+import ch.nexpose.simplex.types.OptimisationType;
 
 /**
  * Created by cansik on 22/11/15.
@@ -15,15 +16,19 @@ public class SimplexSolver {
     private String[] head;
     private String[] side;
 
-    public void solve(SimplexProblem problem)
+    public Double solve(SimplexProblem problem)
     {
         //switch ineqations to pattern: <=
         for(SimplexConstraint c : problem.getConstraints())
         {
             //todo: cover equals!
-            if(c.getConstraintType() != ConstraintType.LessThanEquals)
+            if (c.getConstraintType() != ConstraintType.LessThanEquals)
                 c.convertInequation();
         }
+
+        //check if max or min
+        if(problem.getOptimisationType() == OptimisationType.Min)
+            problem.convertInequation();
 
         //create head & side variables
         head = new String[problem.getCoefficients().length - 1];
@@ -66,6 +71,8 @@ public class SimplexSolver {
         //show result
         System.out.println("Result: " + schema[aimIndex][cIndex]);
         System.out.println();
+
+        return schema[aimIndex][cIndex];
     }
 
     private boolean nextStep(int stepCount)
@@ -111,13 +118,13 @@ public class SimplexSolver {
 
         for(int y = 0; y < aimIndex; y++)
         {
-            double bq = schema[y][x];
+            double aiq = schema[y][x];
 
             //bq has to be bigger than or equal 0
-            if (bq >= 0)
+            if (aiq >= 0)
                 continue;
 
-            double q = Math.abs(schema[y][cIndex] / schema[y][x]);
+            double q = Math.abs(schema[y][cIndex] / aiq);
             if(q < min)
             {
                 min = q;

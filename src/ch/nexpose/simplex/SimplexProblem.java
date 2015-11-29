@@ -67,7 +67,7 @@ public class SimplexProblem {
                     c.setConstraintType(ConstraintType.Equals);
                     break;
 
-                case "=>":
+                case ">=":
                     c.setConstraintType(ConstraintType.GreaterThanEquals);
                     break;
             }
@@ -106,5 +106,13 @@ public class SimplexProblem {
             slackVars[i] = coefficients[i].getValue();
 
         return slackVars;
+    }
+
+    public void convertInequation()
+    {
+        for(int i = 0; i < coefficients.length - 1; i++)
+        {
+            coefficients[i].setValue(coefficients[i].getValue()*-1);
+        }
     }
 }
