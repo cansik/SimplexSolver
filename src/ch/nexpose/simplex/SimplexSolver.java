@@ -2,6 +2,11 @@ package ch.nexpose.simplex;
 
 import ch.nexpose.simplex.types.ConstraintType;
 import ch.nexpose.simplex.types.OptimisationType;
+import com.sun.deploy.util.ArrayUtil;
+
+import java.util.Arrays;
+
+import static ch.nexpose.simplex.SimplexUtil.addHelperVar;
 
 /**
  * Created by cansik on 22/11/15.
@@ -18,29 +23,19 @@ public class SimplexSolver {
 
     public Double solve(SimplexProblem problem)
     {
+        //equals
+        problem.convertEqualsConstraints();
+
         //switch ineqations to pattern: <=
         for(SimplexConstraint c : problem.getConstraints())
         {
-            if(problem.getOptimisationType() == OptimisationType.Max)
-            {
-                //todo: cover equals!
-                if (c.getConstraintType() == ConstraintType.GreaterThanEquals)
-                    c.convertInequation();
-            }
-
-            if(problem.getOptimisationType() == OptimisationType.Min)
-            {
-                //todo: cover equals!
-                if (c.getConstraintType() == ConstraintType.LessThanEquals)
-                    c.convertInequation();
-            }
+            if (c.getConstraintType() == ConstraintType.GreaterThanEquals)
+                c.convertInequation();
         }
 
         //check if max or min
-        /*
         if(problem.getOptimisationType() == OptimisationType.Min)
             problem.convertInequation();
-        */
 
         //create head & side variables
         head = new String[problem.getCoefficients().length - 1];
@@ -70,6 +65,13 @@ public class SimplexSolver {
 
         printSchema("Initial Schema");
 
+        //check for dual algorithm
+        int negCCount = getNegativeCCount();
+        if(negCCount > 0)
+        {
+            dualAlgorithm(negCCount);
+        }
+
         //run algorithm
         int stepCount = 0;
         while (nextStep(stepCount++)){
@@ -90,11 +92,42 @@ public class SimplexSolver {
             System.out.println(xName + "\t= " + schema[index][cIndex]);
         }
 
+        if(negCCount > 0)
+        {
+            schema[aimIndex][cIndex] *= -1;
+        }
+
         //show result
         System.out.println("Result: " + schema[aimIndex][cIndex]);
         System.out.println();
 
         return schema[aimIndex][cIndex];
+    }
+
+    private int getNegativeCCount()
+    {
+        int c = 0;
+
+        boolean[] negC = getNegativeC();
+        for(int i = 0; i < negC.length; i++)
+        {
+            if (negC[i])
+                c++;
+        }
+
+        return c;
+    }
+
+
+    private boolean[] getNegativeC()
+    {
+        boolean[] isNegative = new boolean[schema.length-1];
+        for(int i = 0; i < schema.length - 1; i++)
+        {
+            isNegative[i] = schema[i][cIndex] < 0;
+        }
+
+        return isNegative;
     }
 
     private boolean nextStep(int stepCount)
@@ -113,6 +146,14 @@ public class SimplexSolver {
 
         System.out.println("Pivot (" + pivotIndex.y + "|" + pivotIndex.x + "): " + schema[pivotIndex.y][pivotIndex.x]);
 
+        swap(pivotIndex);
+
+        printSchema("Step " + stepCount);
+        return true;
+    }
+
+    private void swap(MatrixPos pivotIndex)
+    {
         //shift with pivot
         schema[pivotIndex.y] = Equation.shift(schema[pivotIndex.y], pivotIndex.x);
 
@@ -128,9 +169,6 @@ public class SimplexSolver {
                 schema[y] = Equation.plugIn(eq, values, pivotIndex.x);
             }
         }
-
-        printSchema("Step " + stepCount);
-        return true;
     }
 
     private MatrixPos getPositionOfSmallestQuotient(int x)
@@ -224,6 +262,87 @@ public class SimplexSolver {
         }
 
         System.out.println();
+    }
+
+    private void dualAlgorithm(int negCCount)
+    {
+        System.out.println("Problem can only be solved with dual algorithm!\n");
+
+        //save z and add h and cIndex
+        double[] saveZ = schema[aimIndex].clone();
+        int saveCIndex = cIndex;
+
+        schema[aimIndex] = new double[schema[aimIndex].length];
+
+        //for each minus add a helper var
+        for(int n = 0; n < negCCount; n++) {
+
+            //add q0 as helper
+            for (int i = 0; i < schema.length; i++) {
+                schema[i] = SimplexUtil.insertAt((schema[i]), 0, 1);
+
+                if(i == aimIndex)
+                {
+                    //add name
+                    head = SimplexUtil.insertAt(head, 0, "q"+n);
+                    cIndex++;
+                }
+            }
+        }
+
+        //set h = -q0
+        //todo: is it really -1?
+        schema[aimIndex][0] = -1;
+
+        //print
+        printSchema("Dual Schema");
+
+        //switch negative c's
+        boolean[] negativeC = getNegativeC();
+        int ci = 0;
+        for(int i = negativeC.length - 1; i >= 0; i--)
+        {
+            if(negativeC[i])
+            {
+                //todo: switch var
+                swap(new MatrixPos(i,ci));
+                ci++;
+            }
+        }
+
+        printSchema("Pre Simplex Dual");
+
+        //todo: do the simplex
+        int stepCount = 0;
+        while (nextStep(stepCount++)){}
+
+        System.out.println("Dual algorithm stopped!");
+
+        //todo: cleanup
+        //remove columns
+        for(int i = 0; i < head.length; i++)
+        {
+            if(head[i].startsWith("q"))
+            {
+                //remove entry
+                for(int j = 0; j < schema.length; j++)
+                {
+                    schema[j] = SimplexUtil.removeAt(schema[j], i);
+                }
+
+                //remove head
+                head = SimplexUtil.removeAt(head, i);
+                i--;
+            }
+        }
+
+        //change vars
+        int indexX1 = getIndexOf("x1");
+        schema[aimIndex] = Equation.plugIn(saveZ, schema[indexX1], 0);
+
+        cIndex = saveCIndex;
+
+        printSchema("Dual-Fixed Simplex Schema");
     }
 
     private long getMaxIterations(int varCount, int inequationCount)

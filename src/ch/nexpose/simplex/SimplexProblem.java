@@ -110,9 +110,29 @@ public class SimplexProblem {
 
     public void convertInequation()
     {
-        for(int i = 0; i < coefficients.length - 1; i++)
+        for(int i = 0; i < coefficients.length; i++)
         {
             coefficients[i].setValue(coefficients[i].getValue()*-1);
         }
+    }
+
+    public void convertEqualsConstraints()
+    {
+        ArrayList<SimplexConstraint> cons = new ArrayList<>();
+
+        for(SimplexConstraint c : this.constraints)
+        {
+            if(c.getConstraintType() != ConstraintType.Equals) {
+                cons.add(c);
+                continue;
+            }
+
+            //is equals
+            cons.add(new SimplexConstraint(c, ConstraintType.LessThanEquals));
+            cons.add(new SimplexConstraint(c, ConstraintType.GreaterThanEquals));
+        }
+
+        SimplexConstraint[] s = new SimplexConstraint[cons.size()];
+        this.constraints = cons.toArray(s);
     }
 }

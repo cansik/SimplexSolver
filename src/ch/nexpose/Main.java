@@ -40,8 +40,15 @@ public class Main {
 
         //solve problem
         SimplexSolver solver = new SimplexSolver();
-        solver.solve(p);
+        Double res = solver.solve(p);
 
-        System.out.println("Problem solved!");
+        if(res == Double.NaN)
+        {
+            System.out.println("Problem has no solution!");
+        }
+        else
+        {
+            System.out.println("Problem solving finished!");
+        }
     }
 }

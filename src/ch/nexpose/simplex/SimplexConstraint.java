@@ -17,6 +17,15 @@ public class SimplexConstraint {
         coefficients = new double[coefficientAmount+1];
     }
 
+    public SimplexConstraint(SimplexConstraint c, ConstraintType t)
+    {
+        this(c.getCoefficients().length-1);
+        for(int i = 0; i < c.getCoefficients().length; i++)
+            coefficients[i] = c.getCoefficients()[i];
+
+        this.constraintType = t;
+    }
+
     public ConstraintType getConstraintType() {
         return constraintType;
     }
@@ -49,5 +58,29 @@ public class SimplexConstraint {
         slackVars[slackVars.length-1] = coefficients[coefficients.length-1];
 
         return slackVars;
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder b = new StringBuilder();
+
+        for(int i = 0; i < this.coefficients.length - 1; i++) {
+            b.append(this.coefficients[i]).append("x").append(i);
+            if(i != this.coefficients.length - 2)
+                b.append(" + ");
+        }
+
+        String sign = "=";
+
+        if(this.constraintType == ConstraintType.GreaterThanEquals)
+            sign = ">=";
+
+        if(this.constraintType == ConstraintType.LessThanEquals)
+            sign = "<=";
+
+        b.append(" ").append(sign).append(" ").append(this.coefficients[this.coefficients.length - 1]);
+
+
+        return b.toString();
     }
 }

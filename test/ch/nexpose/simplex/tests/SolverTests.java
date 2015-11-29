@@ -92,7 +92,7 @@ public class SolverTests {
         p.parse(readAllText("NichtNegativitaet_1"));
 
         Double result = solver.solve(p);
-        Double expected = null;
+        Double expected = Double.NaN;
 
         assertEquals(expected, result);
     }
@@ -126,6 +126,28 @@ public class SolverTests {
 
         double result = solver.solve(p);
         double expected = 110;
+
+        assertEquals(expected, result, EPSILON);
+    }
+
+    @Test
+    public void minimizeTest() {
+        SimplexProblem p = new SimplexProblem();
+        p.parse(readAllText("MinimizeTest"));
+
+        double result = solver.solve(p);
+        double expected = 106.4;
+
+        assertEquals(expected, result, EPSILON);
+    }
+
+    @Test
+    public void eisenBahnTest() {
+        SimplexProblem p = new SimplexProblem();
+        p.parse(readAllText("Eisenbahn"));
+
+        double result = solver.solve(p);
+        double expected = 191;
 
         assertEquals(expected, result, EPSILON);
     }
