@@ -81,7 +81,7 @@ public class SolverTests {
         p.parse(readAllText("NegSchlupf"));
 
         double result = solver.solve(p);
-        double expected = 8;
+        double expected = 86;
 
         assertEquals(expected, result, EPSILON);
     }
@@ -115,6 +115,17 @@ public class SolverTests {
 
         double result = solver.solve(p);
         double expected = 506.66666666666663;
+
+        assertEquals(expected, result, EPSILON);
+    }
+
+    @Test
+    public void markusTest() {
+        SimplexProblem p = new SimplexProblem();
+        p.parse(readAllText("MarkusTest"));
+
+        double result = solver.solve(p);
+        double expected = 110;
 
         assertEquals(expected, result, EPSILON);
     }

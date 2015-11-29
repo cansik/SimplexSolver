@@ -21,14 +21,26 @@ public class SimplexSolver {
         //switch ineqations to pattern: <=
         for(SimplexConstraint c : problem.getConstraints())
         {
-            //todo: cover equals!
-            if (c.getConstraintType() != ConstraintType.LessThanEquals)
-                c.convertInequation();
+            if(problem.getOptimisationType() == OptimisationType.Max)
+            {
+                //todo: cover equals!
+                if (c.getConstraintType() == ConstraintType.GreaterThanEquals)
+                    c.convertInequation();
+            }
+
+            if(problem.getOptimisationType() == OptimisationType.Min)
+            {
+                //todo: cover equals!
+                if (c.getConstraintType() == ConstraintType.LessThanEquals)
+                    c.convertInequation();
+            }
         }
 
         //check if max or min
+        /*
         if(problem.getOptimisationType() == OptimisationType.Min)
             problem.convertInequation();
+        */
 
         //create head & side variables
         head = new String[problem.getCoefficients().length - 1];
@@ -53,11 +65,21 @@ public class SimplexSolver {
 
         schema[aimIndex] = problem.getSlackVariables();
 
+        //calcualte cancle steps size for zyclic problems
+        long maxSteps = getMaxIterations(problem.getCoefficients().length - 2, problem.getConstraints().length);
+
         printSchema("Initial Schema");
 
         //run algorithm
         int stepCount = 0;
-        while (nextStep(stepCount++)){}
+        while (nextStep(stepCount++)){
+            if(stepCount > maxSteps)
+            {
+                //cancle because of zyclic problems
+                System.out.println("Cylcic Problem! Not solvable!");
+                return null;
+            }
+        }
 
         System.out.println();
 
@@ -147,7 +169,6 @@ public class SimplexSolver {
         }
 
         //nothing found
-        //todo: do something here! are we finished?
         System.out.println("no new element found to switch!");
         return null;
     }
@@ -205,4 +226,20 @@ public class SimplexSolver {
         System.out.println();
     }
 
+    private long getMaxIterations(int varCount, int inequationCount)
+    {
+        int n = varCount + inequationCount;
+        int k = inequationCount;
+
+        return faculty(n) / (faculty(n-k) * faculty(k));
+    }
+
+    private long faculty(int n)
+    {
+        long m = 1;
+        for (int i = 1; i <= n; i++) {
+            m *= i;
+        }
+        return m;
+    }
 }
